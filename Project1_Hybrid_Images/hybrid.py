@@ -3,6 +3,7 @@ sys.path.append('/Users/kb/bin/opencv-3.1.0/build/lib/')
 
 import cv2
 import numpy as np
+import math
 
 def cross_correlation_2d(img, kernel):
     '''Given a kernel of arbitrary m x n dimensions, with both m and n being
@@ -22,9 +23,50 @@ def cross_correlation_2d(img, kernel):
         Return an image of the same dimensions as the input image (same width,
         height and the number of color channels)
     '''
-    # TODO-BLOCK-BEGIN
-    raise Exception("TODO in hybrid.py not implemented")
-    # TODO-BLOCK-END
+
+    # if grayscale, do it 1 time
+    if len(img.shape) == 2:
+        return cross_corr_helper(img,kernel)
+
+    # if RGB img, do it 3 times
+    if len(img.shape) == 3:
+
+        # create output dimensions with zeros
+        output_img = np.zeros(img.shape)
+
+        # add a 2d cross corr image to a 3d output image, one per time
+        for i in range(3):
+            output_img[:,:,i] = cross_corr_helper(img[:,:,i], kernel)
+
+        return output_img
+
+
+def cross_corr_helper(img, kernel):
+
+    # returns a 2d image cross correlated
+
+    # kernel dim.
+    m = kernel.shape[0]
+    n = kernel.shape[1]
+
+    # create output dimensions
+    img_row = img.shape[0]
+    img_col = img.shape[1]
+    output_img = np.zeros((img_row,img_col))
+
+    # Pad the img with 0s
+    pad_width = kernel.shape[1] / 2   # kernel width floor div by 2
+    pad_height = kernel.shape[0] / 2  # kernel width floor div by 2
+    pad_img = np.pad(img,[(pad_height,pad_height),(pad_width,pad_width)],'constant',constant_values=(0))
+
+    for r in range(img_row):
+        for c in range(img_col):
+
+            neighb_arr = pad_img[r:r+m,c:c+n]  # grab neighs from pad_img
+            product_arr = neighb_arr * kernel  # mult with kernel
+            output_img[r,c] = product_arr.sum()  # sum and assign to output_img
+
+    return output_img
 
 def convolve_2d(img, kernel):
     '''Use cross_correlation_2d() to carry out a 2D convolution.
@@ -39,11 +81,14 @@ def convolve_2d(img, kernel):
         Return an image of the same dimensions as the input image (same width,
         height and the number of color channels)
     '''
-    # TODO-BLOCK-BEGIN
-    raise Exception("TODO in hybrid.py not implemented")
-    # TODO-BLOCK-END
 
-def gaussian_blur_kernel_2d(sigma, width, height):
+   # flip the kernel
+    kernel_flip = kernel[::-1,::-1]
+
+    return cross_correlation_2d(img, kernel_flip)
+
+
+def gaussian_blur_kernel_2d(sigma, height, width):
     '''Return a Gaussian blur kernel of the given dimensions and with the given
     sigma. Note that width and height are different.
 
@@ -58,9 +103,25 @@ def gaussian_blur_kernel_2d(sigma, width, height):
         Return a kernel of dimensions width x height such that convolving it
         with an image results in a Gaussian-blurred image.
     '''
-    # TODO-BLOCK-BEGIN
-    raise Exception("TODO in hybrid.py not implemented")
-    # TODO-BLOCK-END
+
+    kernel = np.zeros((height,width))
+
+    for r in range(height):
+        for c in range(width):
+
+            # translate row and col to x, y coordinates
+            x = c-width/2
+            y = -r+height/2
+
+            first = 1/(2*math.pi*math.pow(sigma,2))
+            second = math.exp(-1 * (math.pow(x, 2) + math.pow(y, 2)) / (2 * math.pow(sigma, 2)))
+            gauss = first*second
+            kernel[r,c] = gauss
+
+            sum = np.sum(kernel)
+            n_kernel = kernel/sum
+
+    return n_kernel
 
 def low_pass(img, sigma, size):
     '''Filter the image as if its filtered with a low pass filter of the given
@@ -71,9 +132,10 @@ def low_pass(img, sigma, size):
         Return an image of the same dimensions as the input image (same width,
         height and the number of color channels)
     '''
-    # TODO-BLOCK-BEGIN
-    raise Exception("TODO in hybrid.py not implemented")
-    # TODO-BLOCK-END
+
+    kernel = gaussian_blur_kernel_2d(sigma,size,size)
+
+    return convolve_2d(img,kernel)
 
 def high_pass(img, sigma, size):
     '''Filter the image as if its filtered with a high pass filter of the given
@@ -84,9 +146,8 @@ def high_pass(img, sigma, size):
         Return an image of the same dimensions as the input image (same width,
         height and the number of color channels)
     '''
-    # TODO-BLOCK-BEGIN
-    raise Exception("TODO in hybrid.py not implemented")
-    # TODO-BLOCK-END
+
+    return img - low_pass(img, sigma, size)
 
 def create_hybrid_image(img1, img2, sigma1, size1, high_low1, sigma2, size2,
         high_low2, mixin_ratio):

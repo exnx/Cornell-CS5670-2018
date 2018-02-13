@@ -10,7 +10,8 @@ the same test at different difficulties.  Higher numbers are more difficult
 """
 import sys
 sys.path.append('/Users/kb/bin/opencv-3.1.0/build/lib/')
-
+# mkdir -p /Users/ericnguyen/Library/Python/2.7/lib/python/site-packages
+# echo 'import site; site.addsitedir("/usr/local/lib/python2.7/site-packages")' >> /Users/ericnguyen/Library/Python/2.7/lib/python/site-packages/homebrew.pth
 
 import unittest
 
@@ -60,6 +61,11 @@ class TestCrossCorrelation2D(unittest.TestCase):
 
 	self.assertTrue(np.allclose(student, solution, atol=1e-08), \
 		msg="Incorrect cross-correlation of greyscale image using rectangular mean filter")
+
+
+# -------------- FAILED AT RGB image
+
+
 
     def test_mean_filter_RGB(self):
 	'''
@@ -185,6 +191,8 @@ class TestGaussianKernel2D(unittest.TestCase):
 	    [ 0.03688345,  0.03916419,  0.03995536,  0.03916419,  0.03688345]])
 	self.assertTrue(np.allclose(hybrid.gaussian_blur_kernel_2d(5, 5, 5), a,
 	    atol=1e-08))
+
+
 
     def test_1_7_3(self):
 	a = np.array([[ 0.00121496,  0.00200313,  0.00121496],
